@@ -20,9 +20,15 @@ WORDS = response.content.splitlines()
 # User input field
 
 class GUI(tk.Tk):
-    def __init__(self) -> None:
+    def __init__(self, title: str, size: tuple[int, int]) -> None:
         super().__init__()
-        self.geometry("600x800")
+        self.title(title)
+        self.geometry(f"{size[0]}x{size[1]}")
+
+
+
+
+
 
 
 
@@ -37,6 +43,6 @@ class GUI(tk.Tk):
 
 
 if __name__ == "__main__":
-    app = GUI()
+    app = GUI("Typing Speed Test", (600, 800))
 
     app.mainloop()
