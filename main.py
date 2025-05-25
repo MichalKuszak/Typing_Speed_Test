@@ -19,9 +19,11 @@ WORDS = response.content.splitlines()
 # Best score?
 # User input field
 
-class GUI(tk.Tk) -> None:
-    def __init__(self):
+class GUI(tk.Tk):
+    def __init__(self) -> None:
         super().__init__()
+        self.geometry("600x800")
+
 
 
 
@@ -34,4 +36,7 @@ class GUI(tk.Tk) -> None:
 # TODO Create a logic for checking if the user typing is correct. Treat space as submit
 
 
+if __name__ == "__main__":
+    app = GUI()
 
+    app.mainloop()
