@@ -6,8 +6,9 @@ import requests
 import random
 import ttkbootstrap as ttk
 from ttkbootstrap import Style
-from tkinter import  messagebox
-# TODO Get word list
+from tkinter import messagebox, StringVar
+
+time_left = 0
 
 try:
     with open("./assets/words.txt", mode="r") as file:
@@ -20,9 +21,9 @@ except FileNotFoundError:
         for item in WORDS:
             file.write(f"{item}\n")
 
-def word_picker() -> set[str]:
-    test_set ={word for word in random.choices(WORDS, k=200)}
-    return test_set
+def word_picker() -> list[str]:
+    test_list = [word for word in random.choices(WORDS, k=200)]
+    return test_list
 
 # TODO Create a GUI
 # Timer
@@ -43,6 +44,17 @@ class GUI(tk.Tk):
         self.config(padx=20, pady=20)
 
         self.main = Main(self)
+
+    def countdown(self):
+        global time_left
+        if time_left > 0:
+            secs = divmod(time_left, 60)
+            self.main.timer.time_left_label.config(text=f"{secs:02d}")
+            time_left -= 1
+            self.after(1000, func=self.countdown)
+        else:
+            messagebox.showinfo("Time's up!")
+
 
 class Main(ttk.Frame):
     def __init__(self, parent: tk.Misc) -> None:
@@ -108,35 +120,43 @@ class TitleLabel(ttk.Frame):
 class TimerControls(ttk.Frame):
     def __init__(self, parent: tk.Misc) -> None:
         super().__init__(parent)
+        self.parent = parent
+        self.time_left = 0
+        self.timer_id = None
         self.create_widgets()
         self.layout_widgets()
 
     def create_widgets(self) -> None:
         self.start_button = ttk.Button(self, text='START', style="success")
-        self.time_left = ttk.Label(self,
-                                   text="60",
+        self.time_left_var = StringVar()
+        self.time_left_var.set("60")
+        self.time_left_label = ttk.Label(self,
+                                   text="5",
                                    font=("Futura", 16),
                                    width=5,
                                    justify="center",
                                    anchor="center",
-                                   relief="groove")
+                                   relief="groove",
+                                   textvariable=self.time_left_var)
         self.stop_button = ttk.Button(self, text='STOP', style="danger")
 
     def layout_widgets(self) -> None:
         self.start_button.pack(side="left", padx=10, pady=10)
-        self.time_left.pack(side="left", padx=10, pady=10)
+        self.time_left_label.pack(side="left", padx=10, pady=10)
         self.stop_button.pack(side="left", padx=10, pady=10)
 
 class CurrentScore(ttk.Frame):
     def __init__(self, parent: tk.Misc) -> None:
         super().__init__(parent)
+        self.score_var = StringVar()
+        self.score_var.set("0")
         self.create_widgets()
         self.layout_widgets()
 
     def create_widgets(self) -> None:
         self.current_score_label = ttk.Label(self, text="Current WPM:", font=("Futura", 16))
         self.current_score_val = ttk.Label(self,
-                                           text="0",
+                                           textvariable=self.score_var,
                                            font=("Futura", 16),
                                            width=5,
                                            justify="center",
@@ -150,6 +170,7 @@ class CurrentScore(ttk.Frame):
 class CurrentWord(ttk.Frame):
     def __init__(self, parent: tk.Misc) -> None:
         super().__init__(parent)
+        self.current_word_var = StringVar()
         self.create_widgets()
         self.layout_widgets()
 
@@ -160,7 +181,8 @@ class CurrentWord(ttk.Frame):
                                             background="white",
                                             foreground="black",
                                             borderwidth=2,
-                                            relief="groove")
+                                            relief="groove",
+                                            textvariable=self.current_word_var)
 
     def layout_widgets(self) -> None:
         self.current_word_label.pack(padx=10, pady=10)
@@ -168,8 +190,9 @@ class CurrentWord(ttk.Frame):
 class ListBox(ttk.Frame):
     def __init__(self, parent: tk.Misc) -> None:
         super().__init__(parent)
-        self.words_dict = dict([(idx, val) for idx, val in enumerate(word_picker())])
-        print(self.words_dict)
+        self.list_of_words = word_picker()
+        self.listbox_var = StringVar()
+        self.listbox_var.set(self.list_of_words)
         self.create_widgets()
         self.layout_widgets()
 
@@ -180,10 +203,8 @@ class ListBox(ttk.Frame):
                                   width=560,
                                   height=10,
                                   justify="center",
+                                  listvariable=self.listbox_var
                                   )
-        for key, value in self.words_dict.items():
-            self.listbox.insert(key, value)
-        self.listbox.configure(state="disabled")
 
     def layout_widgets(self) -> None:
         self.listbox_label.pack(anchor="nw", padx=10, pady=5)
@@ -192,6 +213,7 @@ class ListBox(ttk.Frame):
 class UserEntry(ttk.Frame):
     def __init__(self, parent: tk.Misc) -> None:
         super().__init__(parent)
+        self.user_entry_var = StringVar()
         self.create_widgets()
         self.layout_widgets()
 
@@ -199,17 +221,44 @@ class UserEntry(ttk.Frame):
         self.user_entry_box = ttk.Entry(self,
                                         takefocus=True,
                                         font=("Futura", 20),
-                                        justify="center")
+                                        justify="center",
+                                        textvariable=self.user_entry_var)
 
     def layout_widgets(self) -> None:
         self.user_entry_box.pack(padx=10, pady=10)
 
 
+class App(GUI):
+    def __init__(self, title: str, size: tuple[int, int]):
+        super().__init__(title=title, size=size)
+        self.counter = 0
+        self.user_input = self.main.user_entry.user_entry_var # get value on space or enter click
+        self.list_of_words = self.main.listbox.list_of_words
+        self.current_word_label = self.main.current_word.current_word_var
+        self.update_current_word()
+        self.bind("<Return>space", self.check_user_input)
+        self.bind("<space>", self.check_user_input)
+
+    def update_current_word(self):
+        self.current_word = self.list_of_words[0]
+        self.current_word_label.set(f"{self.current_word.strip().upper()}")
+        self.list_of_words.remove(self.current_word)
+        self.main.listbox.listbox_var.set(self.list_of_words)
+
+    def check_user_input(self, event):
+        user_string = self.user_input.get().lower()
+        current_word = self.current_word_label.get().lower()
+        current_score = self.main.current_score.score_var
+        if user_string.strip() == current_word:
+            self.counter += 1
+        self.update_current_word()
+        self.user_input.set("")
+        current_score.set(f"{self.counter}")
+
 
 
 # TODO Create countdown timer logic
-# timer = tk.StringVar()
-# timer.set("60")
+
 
 # TODO Generate a list of 200 random words
 
@@ -233,7 +282,7 @@ class UserEntry(ttk.Frame):
 #
 #
 if __name__ == "__main__":
-    app = GUI("Typing Speed Test", (400, 600))
+    app = App("Typing Speed Test", (400, 600))
 #
     app.mainloop()
 
