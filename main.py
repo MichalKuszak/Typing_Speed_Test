@@ -1,6 +1,7 @@
 import time
 import tkinter as tk
 from ensurepip import bootstrap
+from time import sleep
 
 import requests
 import random
@@ -128,8 +129,8 @@ class TimerControls(ttk.Frame):
 
     def create_widgets(self) -> None:
         self.start_button = ttk.Button(self, text='START', style="success")
-        self.time_left_var = StringVar()
-        self.time_left_var.set("60")
+        self.time_left_var = tk.IntVar()
+        self.time_left_var.set(60)
         self.time_left_label = ttk.Label(self,
                                    text="5",
                                    font=("Futura", 16),
@@ -219,10 +220,10 @@ class UserEntry(ttk.Frame):
 
     def create_widgets(self) -> None:
         self.user_entry_box = ttk.Entry(self,
-                                        takefocus=True,
                                         font=("Futura", 20),
                                         justify="center",
-                                        textvariable=self.user_entry_var)
+                                        textvariable=self.user_entry_var,
+                                        state="disabled")
 
     def layout_widgets(self) -> None:
         self.user_entry_box.pack(padx=10, pady=10)
@@ -236,8 +237,12 @@ class App(GUI):
         self.list_of_words = self.main.listbox.list_of_words
         self.current_word_label = self.main.current_word.current_word_var
         self.update_current_word()
+        self.time_left = self.main.timer.time_left_var
+        self.main.timer.start_button.config(command=self.countdown)
+
         self.bind("<Return>space", self.check_user_input)
         self.bind("<space>", self.check_user_input)
+
 
     def update_current_word(self):
         self.current_word = self.list_of_words[0]
@@ -255,32 +260,31 @@ class App(GUI):
         self.user_input.set("")
         current_score.set(f"{self.counter}")
 
+    def countdown(self):
+        timer = self.time_left.get()
+        if timer > 0:
+            timer -= 1
+            self.time_left.set(timer)
+            self.after(1000, self.countdown)
+        else:
+            self.time_left.set(timer)
+            timer = 0
+
+    def reset_timer(self):
+        raise NotImplementedError
+
+    def start_test(self):
+        self.main.user_entry.user_entry_box.config(state="normal",
+                                                   takefocus=True)
+
+
 
 
 # TODO Create countdown timer logic
 
 
-# TODO Generate a list of 200 random words
 
 
-    # user_mistakes_list = []
-    # counter = 0
-    # user_score = 0
-    # # TODO Create logic for displaying current and next word
-    # while True:
-    #     print(f"Score: {user_score}\nThe word is: {test_list[counter].upper()}")
-    #     user_input = input()
-    #     if user_input.lower() == test_list[counter]:
-    #         user_score += 1
-    #     else:
-    #         mistake = test_list.pop(counter)
-    #         user_mistakes_list.append(mistake)
-    #     counter += 1
-    #
-    # print(f"You typed the following words wrong: {user_mistakes_list}")
-# TODO Create a logic for checking if the user typing is correct. Treat space as submit
-#
-#
 if __name__ == "__main__":
     app = App("Typing Speed Test", (400, 600))
 #
