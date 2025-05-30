@@ -182,8 +182,11 @@ class CurrentWord(ttk.Frame):
                                             background="white",
                                             foreground="black",
                                             borderwidth=2,
+                                            width=20,
+                                            anchor="center",
                                             relief="groove",
-                                            textvariable=self.current_word_var)
+                                            textvariable=self.current_word_var,
+                                            state="disabled")
 
     def layout_widgets(self) -> None:
         self.current_word_label.pack(padx=10, pady=10)
@@ -191,20 +194,23 @@ class CurrentWord(ttk.Frame):
 class ListBox(ttk.Frame):
     def __init__(self, parent: tk.Misc) -> None:
         super().__init__(parent)
-        self.list_of_words = word_picker()
         self.listbox_var = StringVar()
-        self.listbox_var.set(self.list_of_words)
         self.create_widgets()
         self.layout_widgets()
 
     def create_widgets(self) -> None:
-        self.listbox_label = ttk.Label(self, text="Next words: ", font=("Futura", 18), justify="left")
+        self.listbox_label = ttk.Label(self,
+                                       text="Next words: ",
+                                       font=("Futura", 18),
+                                       justify="left"
+                                       )
         self.listbox = tk.Listbox(self,
                                   font=("Futura", 18),
                                   width=560,
                                   height=10,
                                   justify="center",
-                                  listvariable=self.listbox_var
+                                  listvariable=self.listbox_var,
+                                  state="disabled"
                                   )
 
     def layout_widgets(self) -> None:
@@ -234,14 +240,13 @@ class App(GUI):
         super().__init__(title=title, size=size)
         self.counter = 0
         self.user_input = self.main.user_entry.user_entry_var # get value on space or enter click
-        self.list_of_words = self.main.listbox.list_of_words
+        self.list_of_words = None
         self.current_word_label = self.main.current_word.current_word_var
-        self.update_current_word()
-        self.time_left = self.main.timer.time_left_var
-        self.main.timer.start_button.config(command=self.countdown)
 
-        self.bind("<Return>space", self.check_user_input)
-        self.bind("<space>", self.check_user_input)
+        self.time_left = self.main.timer.time_left_var
+        self.main.timer.start_button.config(command=self.start_test)
+
+        for key in ["<Return>", "<space>"]: self.bind(key, self.check_user_input)
 
 
     def update_current_word(self):
@@ -266,9 +271,11 @@ class App(GUI):
             timer -= 1
             self.time_left.set(timer)
             self.after(1000, self.countdown)
+            return True
         else:
             self.time_left.set(timer)
             timer = 0
+            return False
 
     def reset_timer(self):
         raise NotImplementedError
@@ -276,6 +283,24 @@ class App(GUI):
     def start_test(self):
         self.main.user_entry.user_entry_box.config(state="normal",
                                                    takefocus=True)
+
+        self.list_of_words = word_picker()
+        # current word
+        self.main.current_word.current_word_label.config(state="normal")
+        # listbox
+        self.main.listbox.listbox.config(state="normal")
+        self.main.listbox.listbox_var.set(self.list_of_words)
+
+        self.update_current_word()
+        self.main.current_word.current_word_label.config(state="disabled")
+        self.main.listbox.listbox.config(state="disabled")
+
+        self.main.user_entry.user_entry_box.focus_set()
+
+        while not self.countdown():
+            self.check_user_input()
+
+
 
 
 
