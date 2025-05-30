@@ -46,15 +46,15 @@ class GUI(tk.Tk):
 
         self.main = Main(self)
 
-    def countdown(self):
-        global time_left
-        if time_left > 0:
-            secs = divmod(time_left, 60)
-            self.main.timer.time_left_label.config(text=f"{secs:02d}")
-            time_left -= 1
-            self.after(1000, func=self.countdown)
-        else:
-            messagebox.showinfo("Time's up!")
+    # def countdown(self):
+    #     global time_left
+    #     if time_left > 0:
+    #         secs = divmod(time_left, 60)
+    #         self.main.timer.time_left_label.config(text=f"{secs:02d}")
+    #         time_left -= 1
+    #         self.after(1000, func=self.countdown)
+    #     else:
+    #         messagebox.showinfo("Time's up!")
 
 
 class Main(ttk.Frame):
@@ -73,7 +73,8 @@ class Main(ttk.Frame):
         self.timer = TimerControls(self.timer_frame)
 
         self.score_frame = ttk.Frame(self)
-        self.current_score = CurrentScore(self.score_frame)
+        self.current_score_words = CurrentScore(self.score_frame, "Current WPM")
+        self.current_score_chars = CurrentScore(self.score_frame, "Current CPM")
 
         self.word_frame = ttk.Frame(self)
         self.current_word = CurrentWord(self.word_frame)
@@ -91,7 +92,8 @@ class Main(ttk.Frame):
         self.timer.pack()
         self.timer_frame.pack()
 
-        self.current_score.pack()
+        self.current_score_words.pack()
+        self.current_score_chars.pack()
         self.score_frame.pack()
 
         self.current_word.pack()
@@ -147,15 +149,16 @@ class TimerControls(ttk.Frame):
         self.stop_button.pack(side="left", padx=10, pady=10)
 
 class CurrentScore(ttk.Frame):
-    def __init__(self, parent: tk.Misc) -> None:
+    def __init__(self, parent: tk.Misc, label_title: str) -> None:
         super().__init__(parent)
+        self.title = label_title
         self.score_var = StringVar()
         self.score_var.set("0")
         self.create_widgets()
         self.layout_widgets()
 
     def create_widgets(self) -> None:
-        self.current_score_label = ttk.Label(self, text="Current WPM:", font=("Futura", 16))
+        self.current_score_label = ttk.Label(self, text=self.title, font=("Futura", 16))
         self.current_score_val = ttk.Label(self,
                                            textvariable=self.score_var,
                                            font=("Futura", 16),
@@ -165,8 +168,8 @@ class CurrentScore(ttk.Frame):
                                            relief="groove") # Fetched from DB
 
     def layout_widgets(self) -> None:
-        self.current_score_label.pack(side="left", padx=10, pady=10)
-        self.current_score_val.pack(side="left", padx=10, pady=10)
+        self.current_score_label.pack(side="left", anchor="center", padx=10, pady=5)
+        self.current_score_val.pack(side="right", anchor="center", padx=10, pady=5)
 
 class CurrentWord(ttk.Frame):
     def __init__(self, parent: tk.Misc) -> None:
@@ -177,7 +180,7 @@ class CurrentWord(ttk.Frame):
 
     def create_widgets(self) -> None:
         self.current_word_label = ttk.Label(self,
-                                            text="CURRENT_WORD",
+                                            text="#####",
                                             font=("Futura", 20),
                                             background="white",
                                             foreground="black",
@@ -238,7 +241,8 @@ class UserEntry(ttk.Frame):
 class App(GUI):
     def __init__(self, title: str, size: tuple[int, int]):
         super().__init__(title=title, size=size)
-        self.counter = 0
+        self.words_counter = 0
+        self.chars_counter = 0
         self.user_input = self.main.user_entry.user_entry_var # get value on space or enter click
         self.list_of_words = None
         self.current_word_label = self.main.current_word.current_word_var
@@ -258,12 +262,15 @@ class App(GUI):
     def check_user_input(self, event):
         user_string = self.user_input.get().lower()
         current_word = self.current_word_label.get().lower()
-        current_score = self.main.current_score.score_var
+        current_words_score = self.main.current_score_words.score_var
+        current_chars_score = self.main.current_score_chars.score_var
         if user_string.strip() == current_word:
-            self.counter += 1
+            self.words_counter += 1
+            self.chars_counter += len(current_word)
         self.update_current_word()
         self.user_input.set("")
-        current_score.set(f"{self.counter}")
+        current_words_score.set(f"{self.words_counter}")
+        current_chars_score.set(f"{self.chars_counter}")
 
     def countdown(self):
         timer = self.time_left.get()
